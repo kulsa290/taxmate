@@ -7,10 +7,12 @@ import './App.css';
 
 const CHAT_STORAGE_KEY = 'taxmate-conversations';
 const THEME_STORAGE_KEY = 'taxmate-theme';
+const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
+const cryptoApi = typeof window !== 'undefined' ? window.crypto : undefined;
 
 const createId = () => {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
+  if (cryptoApi?.randomUUID) {
+    return cryptoApi.randomUUID();
   }
 
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -169,7 +171,7 @@ function App() {
 
     try {
       const authToken = getStoredToken();
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,7 @@ const OpenAI = require("openai");
 const mongoose = require("mongoose");
 const Chat = require("../models/chat");
 const AppError = require("../utils/appError");
+const { sendSuccess } = require("../utils/apiResponse");
 
 const getOpenAIClient = () => {
   if (!process.env.OPENAI_API_KEY) {

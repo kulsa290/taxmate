@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: taxmate-api
+    runtime: node
+    plan: starter
+    autoDeploy: true
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://app.taxmate.in
+      - key: FORCE_HTTPS
+        value: true
+      - key: TRUST_PROXY
+        value: 1
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 300
+      - key: AUTH_RATE_LIMIT_MAX_REQUESTS
+        value: 20
+      - key: MONGODB_MAX_POOL_SIZE
+        value: 50
+      - key: MONGODB_MIN_POOL_SIZE
+        value: 10
+      - key: MONGODB_SERVER_SELECTION_TIMEOUT_MS
+        value: 10000
+      - key: MONGODB_SOCKET_TIMEOUT_MS
+        value: 45000
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false

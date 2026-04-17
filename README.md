@@ -138,6 +138,8 @@ taxmate/
 - Store secrets in platform environment variables, not in code
 - Use MongoDB Atlas for production database hosting
 
+Detailed production deployment guidance lives in `docs/production-deployment.md`.
+
 ## License
 
 This project is currently private to the author unless a separate license is added.

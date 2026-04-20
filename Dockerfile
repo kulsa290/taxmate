@@ -62,11 +62,6 @@ RUN npm ci --omit=dev && \
 
 # Copy built application from build stage
 COPY --from=build /app/src ./src
-COPY --from=build /app/docs ./docs
-COPY --from=build /app/*.md ./
-COPY --from=build /app/*.json ./
-COPY --from=build /app/*.sh ./
-COPY --from=build /app/.env* ./
 
 # Change ownership to non-root user
 RUN chown -R taxmate:nodejs /app

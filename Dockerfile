@@ -1,5 +1,5 @@
 # TaxMate Backend Dockerfile
-FROM node:18-alpine AS base
+FROM node:22.22.2-alpine AS base
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init

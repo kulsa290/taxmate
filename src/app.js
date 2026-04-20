@@ -24,6 +24,7 @@ const app = express();
 // ============================================================================
 
 const DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "https://app.taxmate.in"];
+const isProduction = process.env.NODE_ENV === "production";
 
 /**
  * Parse environment number with fallback
@@ -124,6 +125,7 @@ app.get("/health", (req, res) => {
     res.setHeader("Content-Type", "application/json");
 
     return res.status(200).json({
+      ok: true,
       success: true,
       message: "Service healthy",
       data: {
@@ -188,7 +190,13 @@ app.use(helmet());
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (!isProduction) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error(`Origin ${origin} is not allowed by CORS`));
@@ -197,6 +205,7 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
     maxAge: 86400,
+    optionsSuccessStatus: 200,
   })
 );
 

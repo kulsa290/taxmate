@@ -10,6 +10,7 @@ import Profile from './components/Profile';
 import TaxCalculator from './components/TaxCalculator';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import HealthTest from './HealthTest';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -78,6 +79,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/health-test" element={<HealthTest />} />
           </Routes>
           <Toaster />
         </div>

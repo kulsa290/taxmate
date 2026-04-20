@@ -27,6 +27,8 @@ export const getHealth = async () => {
   return fetchJson("/health");
 };
 
-export default {
+const apiHelper = {
   getHealth,
 };
+
+export default apiHelper;

@@ -221,7 +221,7 @@ app.use((req, res, next) => {
   if (req.body) {
     Object.keys(req.body).forEach((key) => {
       if (typeof req.body[key] === "string") {
-        req.body[key] = mongoSanitize().mongo().clean(req.body[key]);
+        req.body[key] = mongoSanitize(req.body[key]);
         req.body[key] = xss(req.body[key]);
       }
     });

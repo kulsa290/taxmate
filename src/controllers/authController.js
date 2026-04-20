@@ -79,20 +79,26 @@ exports.register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
+    console.log('Starting registration for:', { name, email, requestId: req.id });
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('User already exists:', email);
       logger.warn("Registration attempt with existing email", { email, requestId: req.id });
       return next(new AppError(409, "User already exists with this email"));
     }
 
+    console.log('Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    console.log('Creating user...');
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
     });
 
+    console.log('User created successfully:', user._id);
     logger.info("New user registered", { userId: user._id, email, requestId: req.id });
 
     return sendSuccess(res, 201, "User created successfully", {
@@ -103,11 +109,19 @@ exports.register = async (req, res, next) => {
       },
     });
   } catch (err) {
+    console.error('Registration error:', err);
     logger.error("Registration failed", {
       error: err.message,
+      stack: err.stack,
       requestId: req.id,
     });
-    return next(new AppError(500, "Registration failed"));
+    // Send error response directly
+    return res.status(500).json({
+      success: false,
+      message: "Registration failed",
+      requestId: req.id,
+      data: null,
+    });
   }
 };
 

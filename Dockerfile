@@ -44,6 +44,10 @@ COPY . .
 # Build the application (if needed)
 RUN npm run build 2>/dev/null || echo "No build script found"
 
+# Ensure docs directory exists (Swagger is served dynamically at runtime,
+# but the directory must be present for any COPY --from=build steps)
+RUN mkdir -p /app/docs
+
 # ===========================================
 # Production Stage
 # ===========================================

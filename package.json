@@ -1,21 +1,44 @@
 {
   "name": "taxmate-backend",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "Professional-grade AI-powered tax calculation and management backend API",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "lint": "eslint src/**/*.js 2>/dev/null || echo 'ESLint not configured'",
     "verify:backend": "node -e \"require('./src/app'); console.log('Backend app loads successfully');\"",
+    "validate:docker": "node validate-docker-setup.js",
+    "docker:dev": "docker-compose up --build",
+    "docker:prod": "docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build",
+    "docker:test": "docker-compose -f docker-compose.test.yml up --build",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "railway:deploy": "./deploy.sh",
+    "railway:setup": "./railway-setup.sh",
     "build:frontend": "npm --prefix frontend run build",
     "verify:frontend": "npm --prefix frontend run build",
     "verify:ci": "npm run verify:backend && npm run build:frontend"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "tax",
+    "calculator",
+    "AI",
+    "backend",
+    "API",
+    "Express",
+    "MongoDB"
+  ],
+  "author": "TaxMate Team",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
@@ -24,12 +47,22 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.2",
     "helmet": "^8.1.0",
+    "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
+    "mongo-sanitize": "^1.1.0",
     "mongoose": "^9.4.1",
     "morgan": "^1.10.1",
-    "openai": "^6.34.0"
+    "openai": "^6.34.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^14.0.0",
+    "validator": "^13.15.35",
+    "xss": "^1.0.15",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
   }
 }

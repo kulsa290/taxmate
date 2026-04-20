@@ -69,6 +69,44 @@ npm --prefix frontend start
 
 The backend runs on `http://localhost:5000` and the frontend runs on `http://localhost:3000`.
 
+## Docker Deployment (Recommended)
+
+For containerized deployment with Docker and Docker Compose:
+
+### Quick Start with Docker
+
+1. **Prerequisites:**
+   - Docker Engine 20.10+
+   - Docker Compose 2.0+
+
+2. **Clone and setup:**
+   ```bash
+   git clone https://github.com/<your-github-username>/taxmate.git
+   cd taxmate
+   cp .env.deploy.example .env
+   # Edit .env with your production values
+   ```
+
+3. **Development environment:**
+   ```bash
+   docker-compose up --build
+   ```
+   - API: `http://localhost:5000`
+   - MongoDB: `localhost:27017`
+   - Frontend: `http://localhost:3000` (optional)
+
+4. **Production environment:**
+   ```bash
+   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+   ```
+
+5. **Run tests:**
+   ```bash
+   docker-compose -f docker-compose.test.yml up --build
+   ```
+
+For detailed Docker instructions, see `docs/docker-deployment.md`.
+
 ## API Setup Guide
 
 The backend expects the following environment variables in `.env`:
@@ -131,14 +169,22 @@ taxmate/
 - Deploy the backend and frontend to production
 - Add analytics, audit logs, and payment-ready plans
 
-## Deployment Suggestions
+## Deployment Options
 
-- Deploy the backend API to Render or Railway
-- Deploy the React frontend to Vercel
-- Store secrets in platform environment variables, not in code
-- Use MongoDB Atlas for production database hosting
+### Docker Deployment (Recommended)
+- **Containerized**: Full-stack deployment with Docker Compose
+- **Multi-environment**: Development, testing, and production configurations
+- **Scalable**: Easy horizontal scaling and orchestration
+- **Secure**: Non-root containers with proper security practices
 
-Detailed production deployment guidance lives in `docs/production-deployment.md`.
+See `docs/docker-deployment.md` for comprehensive Docker deployment guide.
+
+### Cloud Platform Deployment
+- **Railway**: Docker-based deployment with GitHub integration (Recommended for Docker)
+- **Render**: API deployment with automated builds
+- **Vercel**: Frontend deployment with global CDN
+
+See `docs/railway-deployment.md` for Railway-specific setup.
 
 ## License
 

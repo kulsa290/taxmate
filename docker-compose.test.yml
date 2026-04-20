@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # ===========================================
+  # TaxMate Backend API (Testing)
+  # ===========================================
+  taxmate-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: taxmate-api-test
+    ports:
+      - "5001:5000"
+    environment:
+      - NODE_ENV=test
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/taxmate-test
+      - JWT_SECRET=test-jwt-secret-key-for-docker-compose
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+      - LOG_LEVEL=debug
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - mongodb
+    networks:
+      - taxmate-network
+    restart: "no"
+    command: ["npm", "test"]
+
+  # ===========================================
+  # MongoDB Database (Testing)
+  # ===========================================
+  mongodb:
+    image: mongo:7-jammy
+    container_name: taxmate-mongodb-test
+    restart: "no"
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_DATABASE=taxmate-test
+    volumes:
+      - mongodb_test_data:/data/db
+    networks:
+      - taxmate-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mongodb_test_data:
+
+networks:
+  taxmate-network:
+    driver: bridge

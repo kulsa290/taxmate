@@ -1,15 +1,16 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-function Sidebar({
-  activeConversationId,
-  conversations,
-  isOpen,
-  onClose,
-  onNewChat,
-  onSelectConversation,
-  onToggleTheme,
-  theme,
-}) {
+function Sidebar({ isOpen, onClose }) {
+  const location = useLocation();
+
+  const menuItems = [
+    { path: '/', label: 'Dashboard', icon: '📊' },
+    { path: '/chat', label: 'AI Chat', icon: '💬' },
+    { path: '/tax-calculator', label: 'Tax Calculator', icon: '🧮' },
+    { path: '/profile', label: 'Profile', icon: '👤' },
+  ];
+
   return (
     <>
       <div
@@ -44,77 +45,23 @@ function Sidebar({
           </button>
         </div>
 
-        <button
-          className="group inline-flex items-center justify-between rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-slate-950/15 transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-          onClick={onNewChat}
-          type="button"
-        >
-          <span>New Chat</span>
-          <span aria-hidden="true" className="text-lg transition group-hover:translate-x-0.5">
-            +
-          </span>
-        </button>
-
-        <div className="mt-6 rounded-[24px] border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/70">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
-              Theme
-            </p>
-            <button
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-              onClick={onToggleTheme}
-              type="button"
+        <nav className="flex-1 space-y-2">
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                location.pathname === item.path
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+              onClick={onClose}
             >
-              {theme === 'light' ? 'Dark mode' : 'Light mode'}
-            </button>
-          </div>
-
-          <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Structured for theme toggles, richer chat filters, and pinned conversations.
-          </p>
-        </div>
-
-        <div className="mt-6 min-h-0 flex-1 overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/70 dark:border-slate-800 dark:bg-slate-900/50">
-          <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3 dark:border-slate-800">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
-              Recent chats
-            </p>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              {conversations.length}
-            </span>
-          </div>
-
-          <div className="chat-scrollbar h-full overflow-y-auto px-2 py-2">
-            {conversations.map((conversation) => {
-              const isActive = conversation.id === activeConversationId;
-
-              return (
-                <button
-                  className={`mb-2 w-full rounded-2xl px-3 py-3 text-left transition ${
-                    isActive
-                      ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10 dark:bg-slate-100 dark:text-slate-950'
-                      : 'bg-transparent text-slate-600 hover:bg-slate-100/90 dark:text-slate-300 dark:hover:bg-slate-800/70'
-                  }`}
-                  key={conversation.id}
-                  onClick={() => onSelectConversation(conversation.id)}
-                  type="button"
-                >
-                  <p className="truncate text-sm font-semibold">{conversation.title}</p>
-                  <p
-                    className={`mt-1 text-xs ${
-                      isActive ? 'text-white/70 dark:text-slate-600' : 'text-slate-400 dark:text-slate-500'
-                    }`}
-                  >
-                    {new Date(conversation.createdAt).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+              <span>{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </aside>
     </>
   );

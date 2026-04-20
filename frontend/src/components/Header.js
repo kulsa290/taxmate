@@ -1,6 +1,22 @@
 import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function Header({ onOpenSidebar }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (err) {
+      toast.error('Logout failed');
+    }
+  };
+
   return (
     <header className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-6 lg:px-8">
       <div className="flex items-center gap-3">
@@ -30,11 +46,14 @@ function Header({ onOpenSidebar }) {
           AI online
         </div>
 
+        <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
+
         <button
+          onClick={handleLogout}
           className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white/80 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-800/90 dark:text-slate-200"
           type="button"
         >
-          TM
+          Logout
         </button>
       </div>
     </header>

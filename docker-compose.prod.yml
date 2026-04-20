@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # ===========================================
+  # TaxMate Backend API (Production)
+  # ===========================================
+  taxmate-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: taxmate-api-prod
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - LOG_LEVEL=info
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - taxmate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # MongoDB Database (Production)
+  # ===========================================
+  mongodb:
+    image: mongo:7-jammy
+    container_name: taxmate-mongodb-prod
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=taxmate-prod
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - taxmate-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================
+  # TaxMate Frontend (Production)
+  # ===========================================
+  taxmate-frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend.Dockerfile
+      target: production
+    container_name: taxmate-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - taxmate-api
+    networks:
+      - taxmate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mongodb_data:
+
+networks:
+  taxmate-network:
+    driver: bridge

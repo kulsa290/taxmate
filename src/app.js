@@ -121,6 +121,15 @@ app.get("/health", (req, res) => {
       3: "disconnecting",
     };
 
+    // Add CORS headers for health endpoint
+    const origin = req.headers.origin;
+    if (!origin || !isProduction || allowedOrigins.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin || "*");
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID");
+    }
+
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("Content-Type", "application/json");
 

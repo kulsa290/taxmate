@@ -24,7 +24,7 @@ const app = express();
 // CONFIGURATION & ENVIRONMENT PARSING
 // ============================================================================
 
-const DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "https://app.karsathi.in"];
+const DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "https://karsathi.co.in", "https://www.karsathi.co.in"];
 const isProduction = process.env.NODE_ENV === "production";
 
 /**

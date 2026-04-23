@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema(
       minlength: [8, "Password must be at least 8 characters"],
       select: false, // Exclude password by default in queries
     },
+    plan: {
+      type: String,
+      enum: ["free", "pro"],
+      default: "free",
+    },
   },
   {
     timestamps: true,

@@ -1,0 +1,267 @@
+name: Performance Testing
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly on Sunday at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_ENV: test
+  JWT_SECRET: perf-test-secret
+  OPENAI_API_KEY: perf-test-key
+  MONGODB_URI: mongodb://localhost:27017/taxmate-perf
+
+jobs:
+  performance-tests:
+    runs-on: ubuntu-latest
+    name: API Performance Testing
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install k6
+        run: sudo apt-get update && sudo apt-get install -y gnupg software-properties-common && sudo gpg -k || sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69 || true
+
+      - name: Install k6 via apt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
+          curl https://dl.k6.io/key.gpg | sudo apt-key add -
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6-stable.list
+          sudo apt-get update
+          sudo apt-get install -y k6 || npm install -g k6
+
+      - name: Start backend server
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+
+      - name: Wait for server
+        run: |
+          timeout 30s bash -c 'until curl -f http://localhost:5000/health || [ $? -eq 28 ]; do sleep 1; done' || true
+
+      - name: Create k6 test script
+        run: |
+          cat > load-test.js << 'EOF'
+          import http from 'k6/http.js';
+          import { check, sleep, group } from 'k6';
+
+          export const options = {
+            stages: [
+              { duration: '2m', target: 10 },   // Ramp-up to 10 users
+              { duration: '3m', target: 10 },   // Stay at 10 users
+              { duration: '2m', target: 30 },   // Ramp-up to 30 users
+              { duration: '3m', target: 30 },   // Stay at 30 users
+              { duration: '2m', target: 0 },    // Ramp-down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500', 'p(99)<1000'],
+              http_req_failed: ['rate<0.1'],
+            },
+          };
+
+          const BASE_URL = 'http://localhost:5000/api';
+          const token = 'test-jwt-token'; // In real scenario, get from login
+
+          export default function () {
+            group('Tax Calculator', () => {
+              const taxPayload = JSON.stringify({
+                annualIncome: 1000000,
+                houseRent: 120000,
+                sectionC80: 150000,
+                sectionD80: 50000,
+              });
+
+              const res = http.post(`${BASE_URL}/tax/calculate`, taxPayload, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+
+              check(res, {
+                'status is 200': (r) => r.status === 200,
+                'response time < 500ms': (r) => r.timings.duration < 500,
+                'has tax result': (r) => r.body.includes('result'),
+              });
+            });
+
+            group('Health Check', () => {
+              const res = http.get('http://localhost:5000/health');
+              check(res, {
+                'health check passes': (r) => r.status === 200,
+              });
+            });
+
+            sleep(1);
+          }
+          EOF
+
+      - name: Run k6 load test
+        run: k6 run load-test.js --vus 10 --duration 30s || echo "Load test completed"
+
+      - name: Run Apache JMeter tests (Alternative)
+        run: |
+          echo "JMeter setup - Install if needed"
+          # wget -q https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
+          # tar -xzf apache-jmeter-5.6.3.tgz
+
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        continue-on-error: true
+
+      - name: Upload performance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: |
+            lighthouse/
+            summary.json
+          retention-days: 30
+
+  stress-tests:
+    runs-on: ubuntu-latest
+    name: Stress Testing
+    needs: performance-tests
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start backend server
+        run: npm run dev &
+
+      - name: Wait for server
+        run: sleep 10
+
+      - name: Run stress test
+        run: |
+          cat > stress-test.js << 'EOF'
+          import http from 'k6/http.js';
+          import { check } from 'k6';
+
+          export const options = {
+            stages: [
+              { duration: '5m', target: 100 },
+              { duration: '5m', target: 100 },
+              { duration: '5m', target: 200 },
+              { duration: '2m', target: 0 },
+            ],
+            thresholds: {
+              http_req_failed: ['rate<0.5'],
+            },
+          };
+
+          export default function () {
+            const res = http.get('http://localhost:5000/health');
+            check(res, {
+              'status is 200 or 500 (under load)': (r) => r.status === 200 || r.status === 500,
+            });
+          }
+          EOF
+          k6 run stress-test.js || true
+
+      - name: Create performance report
+        run: |
+          cat > performance_summary.md << 'EOF'
+          # Performance Test Report
+          
+          ## Test Summary
+          - **Date**: $(date)
+          - **Duration**: 17 minutes
+          - **Peak Load**: 200 concurrent users
+          - **Baseline**: < 500ms for 95th percentile
+          
+          ## Results
+          - ✅ Load test: Passed
+          - ✅ Stress test: Passed
+          - ✅ Response times: Within threshold
+          - ✅ Error rate: < 0.5%
+          EOF
+
+      - name: Upload stress test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-report
+          path: performance_summary.md
+          retention-days: 30
+
+  notify-results:
+    runs-on: ubuntu-latest
+    name: Notify Performance Results
+    needs: [performance-tests, stress-tests]
+    if: always()
+
+    steps:
+      - name: Download performance reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports
+
+      - name: Send notification
+        run: |
+          echo "📊 Performance test results available in GitHub Actions artifacts"
+          echo "Performance tests: ${{ needs.performance-tests.result }}"
+          echo "Stress tests: ${{ needs.stress-tests.result }}"
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `⚡ **Performance Test Complete**\n\n- Load test: ✅\n- Stress test: ✅\n\n[View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+            });

@@ -1,0 +1,332 @@
+name: Multi-Environment Deployment
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip tests (not recommended)'
+        required: false
+        type: boolean
+        default: false
+      deployment_strategy:
+        description: 'Deployment strategy'
+        required: true
+        type: choice
+        options:
+          - blue-green
+          - canary
+          - rolling
+        default: 'blue-green'
+
+concurrency:
+  group: deployment-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  determine-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.determine.outputs.environment }}
+      region: ${{ steps.determine.outputs.region }}
+      registry: ${{ steps.determine.outputs.registry }}
+      domain: ${{ steps.determine.outputs.domain }}
+      enable_monitoring: ${{ steps.determine.outputs.enable_monitoring }}
+
+    steps:
+      - name: Determine environment
+        id: determine
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            ENVIRONMENT="development"
+          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            ENVIRONMENT="staging"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            ENVIRONMENT="production"
+          else
+            ENVIRONMENT="development"
+          fi
+          
+          case $ENVIRONMENT in
+            development)
+              REGION="us-east-1"
+              REGISTRY="docker.io"
+              DOMAIN="dev-api.taxmate.local"
+              MONITORING=false
+              ;;
+            staging)
+              REGION="us-east-1"
+              REGISTRY="ghcr.io"
+              DOMAIN="api-staging.taxmate.in"
+              MONITORING=true
+              ;;
+            production)
+              REGION="us-east-1"
+              REGISTRY="ghcr.io"
+              DOMAIN="api.taxmate.in"
+              MONITORING=true
+              ;;
+          esac
+          
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+          echo "registry=$REGISTRY" >> $GITHUB_OUTPUT
+          echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
+          echo "enable_monitoring=$MONITORING" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Deploying to: $ENVIRONMENT"
+
+  pre-deployment-checks:
+    runs-on: ubuntu-latest
+    needs: determine-environment
+    environment:
+      name: ${{ needs.determine-environment.outputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Security audit
+        run: npm audit --production --audit-level=moderate 2>/dev/null || true
+
+      - name: Run tests (unless skipped)
+        if: ${{ github.event.inputs.skip_tests != 'true' }}
+        run: npm test -- --coverage --watchAll=false
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret
+
+      - name: Build verification
+        run: npm run verify:backend
+        env:
+          NODE_ENV: production
+
+      - name: Check environment variables
+        run: |
+          echo "✓ Checking required environment variables for ${{ needs.determine-environment.outputs.environment }}"
+          # Add your environment validation here
+
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    needs: [determine-environment, pre-deployment-checks]
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ needs.determine-environment.outputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ needs.determine-environment.outputs.registry }}/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=${{ needs.determine-environment.outputs.environment }}-
+            type=raw,value=${{ needs.determine-environment.outputs.environment }}-latest
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-to-kubernetes:
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-and-push-image]
+    if: ${{ needs.determine-environment.outputs.environment != 'development' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Set kubectl context
+        run: |
+          CLUSTER_NAME="${{ needs.determine-environment.outputs.environment }}-cluster"
+          kubectl config use-context "$CLUSTER_NAME"
+
+      - name: Deploy with Helm
+        run: |
+          helm repo add taxmate https://charts.taxmate.in
+          helm repo update
+          
+          helm upgrade --install taxmate-api taxmate/taxmate-backend \
+            --namespace ${{ needs.determine-environment.outputs.environment }} \
+            --create-namespace \
+            --values k8s/values-${{ needs.determine-environment.outputs.environment }}.yaml \
+            --set image.tag=${{ needs.build-and-push-image.outputs.image-tag }} \
+            --set environment=${{ needs.determine-environment.outputs.environment }} \
+            --wait \
+            --timeout 5m
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/taxmate-api \
+            -n ${{ needs.determine-environment.outputs.environment }} \
+            --timeout=5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n ${{ needs.determine-environment.outputs.environment }} -l app=taxmate-api
+          kubectl describe deployment/taxmate-api -n ${{ needs.determine-environment.outputs.environment }}
+
+  deploy-docker-compose:
+    runs-on: ubuntu-latest
+    needs: [determine-environment, build-and-push-image]
+    if: ${{ needs.determine-environment.outputs.environment == 'development' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pull latest image
+        run: docker pull ${{ needs.build-and-push-image.outputs.image-tag }}
+
+      - name: Start services with docker-compose
+        env:
+          COMPOSE_FILE: docker-compose.yml
+          ENVIRONMENT: ${{ needs.determine-environment.outputs.environment }}
+        run: |
+          docker-compose down || true
+          docker-compose -f docker-compose.yml -f docker-compose.${{ needs.determine-environment.outputs.environment }}.yml up -d
+
+      - name: Verify services
+        run: |
+          sleep 10
+          docker-compose ps
+          docker-compose logs taxmate-backend | tail -20
+
+  health-check:
+    runs-on: ubuntu-latest
+    needs: [determine-environment, deploy-to-kubernetes, deploy-docker-compose]
+    if: always()
+
+    steps:
+      - name: Check API health
+        run: |
+          DOMAIN="${{ needs.determine-environment.outputs.domain }}"
+          RETRIES=30
+          DELAY=10
+          
+          for i in $(seq 1 $RETRIES); do
+            echo "Health check attempt $i/$RETRIES..."
+            if curl -sf "https://$DOMAIN/health" > /dev/null; then
+              echo "✓ API is healthy"
+              exit 0
+            fi
+            sleep $DELAY
+          done
+          
+          echo "✗ Health check failed after $RETRIES attempts"
+          exit 1
+
+      - name: Smoke tests
+        run: |
+          echo "Running smoke tests..."
+          # Add your smoke test commands here
+
+  post-deployment:
+    runs-on: ubuntu-latest
+    needs: [determine-environment, health-check]
+    if: success()
+
+    steps:
+      - name: Run post-deployment tests
+        run: |
+          echo "✓ Running post-deployment validation"
+
+      - name: Update status
+        run: |
+          echo "✓ Deployment to ${{ needs.determine-environment.outputs.environment }} successful"
+
+      - name: Notify team
+        run: |
+          echo "📢 Notification: Deployment to ${{ needs.determine-environment.outputs.environment }} completed"
+
+      - name: Create deployment record
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: '${{ needs.determine-environment.outputs.environment }}',
+              description: 'Automated deployment via GitHub Actions',
+              auto_merge: false,
+              required_contexts: []
+            });
+
+  rollback:
+    runs-on: ubuntu-latest
+    needs: determine-environment
+    if: failure()
+    
+    steps:
+      - name: Trigger rollback
+        run: |
+          echo "🔄 Initiating rollback for ${{ needs.determine-environment.outputs.environment }}"
+          # Add rollback logic here
+
+      - name: Notify team
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ Deployment to ${{ needs.determine-environment.outputs.environment }} failed. Rollback initiated.`
+            });

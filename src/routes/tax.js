@@ -1,7 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
-const { calculateTax } = require('../controllers/taxController');
 
-router.post('/calculate-tax', calculateTax);
+// This file is deprecated. Use taxRoutes.js instead.
+// Kept for backward compatibility.
 
 module.exports = router;

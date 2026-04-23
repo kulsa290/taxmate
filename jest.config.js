@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Jest configuration for unit and integration tests
  * @type {import('@jest/types').Config.InitialOptions}
  */
@@ -10,7 +10,8 @@ module.exports = {
     "!src/**/*.test.js",
     "!src/**/index.js",
   ],
-  testMatch: ["**/__tests__/**/*.js", "**/?(*.)+(spec|test).js"],
+  testMatch: ["**/src/__tests__/**/*.js", "**/src/?(*.)+(spec|test).js"],
+  testPathIgnorePatterns: ["<rootDir>/src/__tests__/setup.js", "<rootDir>/frontend/"],
   coverageThreshold: {
     global: {
       branches: 50,

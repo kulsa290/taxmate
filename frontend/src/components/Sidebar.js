@@ -31,7 +31,7 @@ function Sidebar({ isOpen, onClose }) {
               AI Workspace
             </p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
-              💼 TaxMate
+              💼 Karsathi
             </h2>
           </div>
 

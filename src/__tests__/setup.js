@@ -6,7 +6,7 @@
 // Set test environment
 process.env.NODE_ENV = "test";
 process.env.JWT_SECRET = "test-jwt-secret-key";
-process.env.MONGODB_URI = "mongodb://test:test@localhost:27017/taxmate-test";
+process.env.MONGODB_URI = "mongodb://test:test@localhost:27017/karsathi-test";
 
 // Suppress logs during tests
 global.console.log = jest.fn();

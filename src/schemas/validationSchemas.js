@@ -1,4 +1,4 @@
-const { z } = require("zod");
+﻿const { z } = require("zod");
 
 /**
  * Validation schema for user registration
@@ -87,10 +87,55 @@ const taxCalculationSchema = z.object({
     .default(0),
 });
 
+/**
+ * Validation schema for saving tax calculation
+ * @type {z.ZodSchema}
+ */
+const saveTaxCalculationSchema = z.object({
+  name: z
+    .string({ required_error: "Name is required" })
+    .trim()
+    .min(1, "Name cannot be empty")
+    .max(200, "Name must not exceed 200 characters"),
+  inputData: z
+    .record(z.any(), { required_error: "Input data is required" }),
+  result: z
+    .record(z.any(), { required_error: "Result is required" }),
+  taxYear: z
+    .string({ required_error: "Tax year is required" })
+    .regex(/^\d{4}$/, "Tax year must be a 4-digit year"),
+});
+
+/**
+ * Validation schema for getting tax calculations
+ * @type {z.ZodSchema}
+ */
+const getTaxCalculationsSchema = z.object({
+  taxYear: z
+    .string()
+    .regex(/^\d{4}$/, "Tax year must be a 4-digit year")
+    .optional(),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(10),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .default(0),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
   profileUpdateSchema,
   chatMessageSchema,
   taxCalculationSchema,
+  saveTaxCalculationSchema,
+  getTaxCalculationsSchema,
 };

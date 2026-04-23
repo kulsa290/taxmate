@@ -59,7 +59,56 @@ exports.logout = async (req, res) => {
 };
 
 /**
- * Register a new user
+ * Upgrade user plan to Pro
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} req.user - Authenticated user object
+ * @param {string} req.user.id - User ID
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Object} Updated user data with new plan
+ * @throws {AppError} 400 if already on pro plan
+ * @throws {AppError} 404 if user not found
+ * @throws {AppError} 500 if upgrade fails
+ * @example
+ * // POST /api/auth/upgrade
+ * // Headers: Authorization: Bearer <token>
+ */
+exports.upgradeToPro = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      logger.warn("Upgrade attempt - user not found", { userId: req.user.id, requestId: req.id });
+      return next(new AppError(404, "User not found"));
+    }
+
+    if (user.plan === "pro") {
+      logger.warn("Upgrade attempt - already pro", { userId: req.user.id, requestId: req.id });
+      return next(new AppError(400, "Already on Pro plan"));
+    }
+
+    user.plan = "pro";
+    await user.save();
+
+    logger.info("User upgraded to Pro", { userId: req.user.id, requestId: req.id });
+    return sendSuccess(res, 200, "Upgrade successful", {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+      },
+    });
+  } catch (err) {
+    logger.error("Upgrade failed", {
+      userId: req.user.id,
+      error: err.message,
+      requestId: req.id,
+    });
+    return next(new AppError(500, "Upgrade failed"));
+  }
+};
  * @async
  * @param {Object} req - Express request object
  * @param {string} req.body.name - User's full name
@@ -106,6 +155,7 @@ exports.register = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        plan: user.plan,
       },
     });
   } catch (err) {
@@ -177,6 +227,7 @@ exports.login = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        plan: user.plan,
       },
     });
   } catch (err) {

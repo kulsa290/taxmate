@@ -8,14 +8,15 @@ const mongoSanitize = require("mongo-sanitize");
 const xss = require("xss");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
-const { v4: uuidv4 } = require("uuid");
+
 const { errorHandler, notFoundHandler } = require("./middleware/errorMiddleware");
 const logger = require("./utils/logger");
 
 const authRoutes = require("./routes/authRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const profileRoutes = require("./routes/profileRoutes");
-const taxRoutes = require("./routes/tax");
+const taxRoutes = require("./routes/taxRoutes");
+const clientRoutes = require("./routes/clientRoutes");
 
 const app = express();
 
@@ -23,7 +24,7 @@ const app = express();
 // CONFIGURATION & ENVIRONMENT PARSING
 // ============================================================================
 
-const DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "https://app.taxmate.in"];
+const DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "https://app.karsathi.in"];
 const isProduction = process.env.NODE_ENV === "production";
 
 /**
@@ -163,7 +164,7 @@ app.get("/", (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=300");
   res.json({
     success: true,
-    message: "TaxMate AI Backend Running",
+    message: "Karsathi AI Backend Running",
     data: null,
   });
 });
@@ -174,7 +175,7 @@ app.get("/", (req, res) => {
 
 // Request ID middleware - adds unique ID to each request for tracing
 app.use((req, res, next) => {
-  req.id = req.headers["x-request-id"] || uuidv4();
+  req.id = req.headers["x-request-id"] || crypto.randomUUID();
   res.setHeader("X-Request-ID", req.id);
   return next();
 });
@@ -283,6 +284,7 @@ app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/tax", taxRoutes);
+app.use("/api/clients", clientRoutes);
 
 // ============================================================================
 // ERROR HANDLING

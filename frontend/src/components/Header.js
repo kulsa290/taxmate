@@ -36,7 +36,7 @@ function Header({ onOpenSidebar }) {
             Premium Tax Copilot
           </p>
           <h1 className="text-lg font-semibold text-slate-900 sm:text-xl dark:text-slate-50">
-            TaxMate AI Assistant
+            Karsathi AI Assistant
           </h1>
         </div>
       </div>

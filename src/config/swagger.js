@@ -13,13 +13,13 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "TaxMate AI Backend API",
+      title: "Karsathi AI Backend API",
       description:
-        "Professional backend API for TaxMate - an AI-powered tax calculation and management platform",
+        "Professional backend API for Karsathi - an AI-powered tax calculation and management platform",
       version: "1.0.0",
       contact: {
-        name: "TaxMate Support",
-        email: "support@taxmate.in",
+        name: "Karsathi Support",
+        email: "support@karsathi.in",
       },
     },
     servers: [
@@ -28,7 +28,7 @@ const options = {
         description: "Development Server",
       },
       {
-        url: "https://api.taxmate.in",
+        url: "https://api.karsathi.in",
         description: "Production Server",
       },
     ],

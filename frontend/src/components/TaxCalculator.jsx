@@ -1,154 +1,750 @@
-import React, { useState } from "react";
-import axios from "axios";
-import toast from "react-hot-toast";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import '../styles/TaxCalculator.css';
 
-export default function TaxCalculator() {
-  const [income, setIncome] = useState("");
-  const [regime, setRegime] = useState("old");
-
-  const [deductions, setDeductions] = useState({
-    section80C: "",
-    section80D: "",
-    hra: "",
+const TaxCalculator = () => {
+  const [income, setIncome] = useState({
+    salary: 0,
+    hra: 0,
+    otherIncome: 0,
   });
 
-  const [result, setResult] = useState(null);
+  const [deductions, setDeductions] = useState({
+    rent: 0,
+    section80C: 0,
+    section80D: 0,
+    section80E: 0,
+    section80G: 0,
+    otherDeductions: 0,
+  });
+
+  const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [clientName, setClientName] = useState('');
 
-  const handleChange = (key, value) => {
-    setDeductions({ ...deductions, [key]: value });
-  };
-
-  const calculateTax = async () => {
-    if (!income || income <= 0) {
-      toast.error("Please enter a valid income");
-      return;
-    }
-
-    setLoading(true);
+  const handleCalculate = async () => {
     try {
-      const res = await axios.post("/api/calculate-tax", {
-        income: Number(income),
-        regime,
+      setLoading(true);
+      setError(null);
+
+      const payload = {
+        income,
         deductions,
-      });
+        clientName: clientName || undefined,
+      };
 
-      setResult(res.data.data);
+      const response = await axios.post('/api/tax/calculate', payload);
 
-      // Save calculation to profile
-      await axios.post("/api/profile/tax-calculation", {
-        income: Number(income),
-        tax: res.data.data.tax,
-        regime,
-      });
-
-      toast.success("Tax calculated and saved!");
+      if (response.data.success) {
+        setResults(response.data.data);
+      }
     } catch (err) {
-      toast.error("Failed to calculate tax");
+      setError(err.response?.data?.message || 'Failed to calculate tax');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleCalculate();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [income, deductions]);
+
+  const handleIncomeChange = (field, value) => {
+    setIncome((prev) => ({
+      ...prev,
+      [field]: Math.max(0, parseFloat(value) || 0),
+    }));
+  };
+
+  const handleDeductionChange = (field, value) => {
+    setDeductions((prev) => ({
+      ...prev,
+      [field]: Math.max(0, parseFloat(value) || 0),
+    }));
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
+  };
+
+  const totalIncome = (income.salary || 0) + (income.hra || 0) + (income.otherIncome || 0);
+  const recommendedClass = results?.comparison.recommendedRegime === 'old' ? 'recommended' : '';
+  const recommendedClassNew = results?.comparison.recommendedRegime === 'new' ? 'recommended' : '';
+
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-8">Smart Tax Calculator 🇮🇳</h1>
-
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Annual Income (₹)</label>
-          <input
-            type="number"
-            placeholder="Enter your annual income"
-            value={income}
-            onChange={(e) => setIncome(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
+    <div className="tax-calculator">
+      <div className="calculator-container">
+        <div className="calculator-header">
+          <h1>💰 Smart Income Tax Calculator</h1>
+          <p>Calculate your tax under both regimes and save more</p>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Tax Regime</label>
-          <select
-            value={regime}
-            onChange={(e) => setRegime(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="old">Old Regime</option>
-            <option value="new">New Regime</option>
-          </select>
+        <div className="calculator-content">
+          <div className="section income-section">
+            <h2 className="section-title">📊 Income Details</h2>
+
+            <div className="form-group">
+              <label>Client Name (Optional)</label>
+              <input
+                type="text"
+                placeholder="Your name or client name"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                className="input-field"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="salary">💼 Salary (Annual)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="salary"
+                  type="number"
+                  placeholder="0"
+                  value={income.salary || ''}
+                  onChange={(e) => handleIncomeChange('salary', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="hra">🏠 House Rent Allowance (HRA)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="hra"
+                  type="number"
+                  placeholder="0"
+                  value={income.hra || ''}
+                  onChange={(e) => handleIncomeChange('hra', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="otherIncome">📈 Other Income</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="otherIncome"
+                  type="number"
+                  placeholder="0"
+                  value={income.otherIncome || ''}
+                  onChange={(e) => handleIncomeChange('otherIncome', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="total-income-box">
+              <span>Gross Total Income:</span>
+              <span className="amount">{formatCurrency(totalIncome)}</span>
+            </div>
+          </div>
+
+          <div className="section deductions-section">
+            <h2 className="section-title">🎯 Deductions & Exemptions</h2>
+
+            <div className="form-group">
+              <label htmlFor="rent">🏘️ House Rent (Section 10(13A))</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="rent"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.rent || ''}
+                  onChange={(e) => handleDeductionChange('rent', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="section80C">📦 Section 80C (Limit: ₹1,50,000)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="section80C"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80C || ''}
+                  onChange={(e) => handleDeductionChange('section80C', e.target.value)}
+                  className="input-field"
+                  min="0"
+                  max="150000"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="section80D">🏥 Section 80D (Limit: ₹1,00,000)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="section80D"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80D || ''}
+                  onChange={(e) => handleDeductionChange('section80D', e.target.value)}
+                  className="input-field"
+                  min="0"
+                  max="100000"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="section80E">🎓 Section 80E (Education Loan Interest)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="section80E"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80E || ''}
+                  onChange={(e) => handleDeductionChange('section80E', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="section80G">❤️ Section 80G (Charitable Donations)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="section80G"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80G || ''}
+                  onChange={(e) => handleDeductionChange('section80G', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="otherDeductions">📝 Other Deductions</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">₹</span>
+                <input
+                  id="otherDeductions"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.otherDeductions || ''}
+                  onChange={(e) => handleDeductionChange('otherDeductions', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {results && (
+            <div className="section results-section">
+              <h2 className="section-title">📈 Tax Comparison Results</h2>
+
+              <div className="comparison-grid">
+                <div className={`regime-box ${recommendedClass}`}>
+                  <h3>📋 Old Regime</h3>
+                  <div className="regime-detail">
+                    <span>Taxable Income:</span>
+                    <span>{formatCurrency(results.oldRegime.taxableIncome)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Basic Tax:</span>
+                    <span>{formatCurrency(results.oldRegime.baseTax)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Cess (4%):</span>
+                    <span>{formatCurrency(results.oldRegime.cess)}</span>
+                  </div>
+                  <div className="tax-total">
+                    {formatCurrency(results.oldRegime.totalTax)}
+                  </div>
+                  {results.comparison.recommendedRegime === 'old' && <div className="recommended-badge">✓ RECOMMENDED</div>}
+                </div>
+
+                <div className={`regime-box ${recommendedClassNew}`}>
+                  <h3>🆕 New Regime</h3>
+                  <div className="regime-detail">
+                    <span>Taxable Income:</span>
+                    <span>{formatCurrency(results.newRegime.taxableIncome)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Basic Tax:</span>
+                    <span>{formatCurrency(results.newRegime.baseTax)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Cess (4%):</span>
+                    <span>{formatCurrency(results.newRegime.cess)}</span>
+                  </div>
+                  <div className="tax-total">
+                    {formatCurrency(results.newRegime.totalTax)}
+                  </div>
+                  {results.comparison.recommendedRegime === 'new' && <div className="recommended-badge">✓ RECOMMENDED</div>}
+                </div>
+              </div>
+
+              <div className="savings-message benefit">
+                <h4>💡 Key Insight</h4>
+                <p>{results.comparison.message}</p>
+              </div>
+
+              {results.suggestions && results.suggestions.length > 0 && (
+                <div className="suggestions-box">
+                  <h3>✨ Tax Saving Suggestions</h3>
+                  <div className="suggestions-list">
+                    {results.suggestions.slice(0, 5).map((suggestion, index) => (
+                      <div key={index} className="suggestion-card">
+                        <h4>{suggestion.title}</h4>
+                        <p>{suggestion.description}</p>
+                        {typeof suggestion.taxSavings === 'number' && (
+                          <div className="savings-amount">💰 Save: {formatCurrency(suggestion.taxSavings)}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="error-message">
+              <p>⚠️ {error}</p>
+            </div>
+          )}
+
+          {loading && (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Calculating tax...</p>
+            </div>
+          )}
         </div>
-
-        {regime === "old" && (
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-gray-700 mb-2">80C Deductions (₹)</label>
-              <input
-                type="number"
-                placeholder="e.g., PPF, ELSS, Life Insurance"
-                onChange={(e) =>
-                  handleChange("section80C", e.target.value)
-                }
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 mb-2">80D Deductions (₹)</label>
-              <input
-                type="number"
-                placeholder="Health Insurance Premium"
-                onChange={(e) =>
-                  handleChange("section80D", e.target.value)
-                }
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 mb-2">HRA (₹)</label>
-              <input
-                type="number"
-                placeholder="House Rent Allowance"
-                onChange={(e) =>
-                  handleChange("hra", e.target.value)
-                }
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        )}
-
-        <button
-          onClick={calculateTax}
-          disabled={loading}
-          className="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {loading ? "Calculating..." : "Calculate Tax"}
-        </button>
-
-        {result && (
-          <div className="mt-6 bg-green-50 p-4 rounded-lg border border-green-200">
-            <h3 className="text-lg font-semibold text-green-800 mb-3">Tax Calculation Result</h3>
-            <div className="space-y-2 text-sm">
-              <p><strong>Gross Income:</strong> ₹{result.income.toLocaleString()}</p>
-              <p><strong>Taxable Income:</strong> ₹{result.taxableIncome.toLocaleString()}</p>
-              <p><strong>Total Deductions:</strong> ₹{result.totalDeductions.toLocaleString()}</p>
-              <p><strong>Tax Regime:</strong> {result.regime.toUpperCase()}</p>
-              <p className="text-lg font-bold text-green-700"><strong>Tax Amount:</strong> ₹{result.tax.toLocaleString()}</p>
-            </div>
-
-            <div className="mt-4">
-              <h4 className="font-semibold text-green-800 mb-2">💡 AI Suggestions:</h4>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                {result.suggestions.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
-}
+};
+
+export default TaxCalculator;
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import '../styles/TaxCalculator.css';
+
+/**
+ * Karsathi Income Tax Calculator Component
+ * Calculates tax under both old and new regimes
+ * Shows savings and recommendations in real-time
+ */
+const TaxCalculator = () => {
+  const [income, setIncome] = useState({
+    salary: 0,
+    hra: 0,
+    otherIncome: 0,
+  });
+
+  const [deductions, setDeductions] = useState({
+    rent: 0,
+    section80C: 0,
+    section80D: 0,
+    section80E: 0,
+    section80G: 0,
+    otherDeductions: 0,
+  });
+
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [clientName, setClientName] = useState('');
+
+  /**
+   * Calculate tax on income/deduction change
+   */
+  const handleCalculate = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const payload = {
+        income,
+        deductions,
+        clientName: clientName || undefined,
+      };
+
+      const response = await axios.post('/api/tax/calculate', payload);
+
+      if (response.data.success) {
+        setResults(response.data.data);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to calculate tax');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Debounced calculation on input change
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleCalculate();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [income, deductions]);
+
+  const handleIncomeChange = (field, value) => {
+    setIncome((prev) => ({
+      ...prev,
+      [field]: Math.max(0, parseFloat(value) || 0),
+    }));
+  };
+
+  const handleDeductionChange = (field, value) => {
+    setDeductions((prev) => ({
+      ...prev,
+      [field]: Math.max(0, parseFloat(value) || 0),
+    }));
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
+  };
+
+  const totalIncome = (income.salary || 0) + (income.hra || 0) + (income.otherIncome || 0);
+
+  return (
+    <div className="tax-calculator">
+      <div className="calculator-container">
+        {/* Header */}
+        <div className="calculator-header">
+          <h1>?? Smart Income Tax Calculator</h1>
+          <p>Calculate your tax under both regimes and save more</p>
+        </div>
+
+        {/* Main Content */}
+        <div className="calculator-content">
+          {/* Income Section */}
+          <div className="section income-section">
+            <h2 className="section-title">?? Income Details</h2>
+
+            {/* Client Name (Optional) */}
+            <div className="form-group">
+              <label>Client Name (Optional)</label>
+              <input
+                type="text"
+                placeholder="Your name or client name"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                className="input-field"
+              />
+            </div>
+
+            {/* Salary */}
+            <div className="form-group">
+              <label htmlFor="salary">?? Salary (Annual)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="salary"
+                  type="number"
+                  placeholder="0"
+                  value={income.salary || ''}
+                  onChange={(e) => handleIncomeChange('salary', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            {/* HRA */}
+            <div className="form-group">
+              <label htmlFor="hra">?? House Rent Allowance (HRA)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="hra"
+                  type="number"
+                  placeholder="0"
+                  value={income.hra || ''}
+                  onChange={(e) => handleIncomeChange('hra', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            {/* Other Income */}
+            <div className="form-group">
+              <label htmlFor="otherIncome">?? Other Income</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="otherIncome"
+                  type="number"
+                  placeholder="Interest, dividends, rental income, etc."
+                  value={income.otherIncome || ''}
+                  onChange={(e) => handleIncomeChange('otherIncome', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            {/* Total Income Display */}
+            <div className="total-income-box">
+              <span>Gross Total Income:</span>
+              <span className="amount">{formatCurrency(totalIncome)}</span>
+            </div>
+          </div>
+
+          {/* Deductions Section */}
+          <div className="section deductions-section">
+            <h2 className="section-title">?? Deductions & Exemptions</h2>
+
+            {/* Rent */}
+            <div className="form-group">
+              <label htmlFor="rent">??? House Rent (Section 10(13A))</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="rent"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.rent || ''}
+                  onChange={(e) => handleDeductionChange('rent', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+              <small>Rent paid to non-related person</small>
+            </div>
+
+            {/* Section 80C */}
+            <div className="form-group">
+              <label htmlFor="section80C">?? Section 80C (Limit: ?1,50,000)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="section80C"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80C || ''}
+                  onChange={(e) => handleDeductionChange('section80C', e.target.value)}
+                  className="input-field"
+                  min="0"
+                  max="150000"
+                />
+              </div>
+              <small>LIC, PPF, ELSS, NSC, Sukanya Samriddhi</small>
+            </div>
+
+            {/* Section 80D */}
+            <div className="form-group">
+              <label htmlFor="section80D">?? Section 80D (Limit: ?1,00,000)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="section80D"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80D || ''}
+                  onChange={(e) => handleDeductionChange('section80D', e.target.value)}
+                  className="input-field"
+                  min="0"
+                  max="100000"
+                />
+              </div>
+              <small>Health insurance premium</small>
+            </div>
+
+            {/* Section 80E */}
+            <div className="form-group">
+              <label htmlFor="section80E">?? Section 80E (Education Loan Interest)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="section80E"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80E || ''}
+                  onChange={(e) => handleDeductionChange('section80E', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+              <small>No limit - entire interest deductible</small>
+            </div>
+
+            {/* Section 80G */}
+            <div className="form-group">
+              <label htmlFor="section80G">?? Section 80G (Charitable Donations)</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="section80G"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.section80G || ''}
+                  onChange={(e) => handleDeductionChange('section80G', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+              <small>Donations to registered charities</small>
+            </div>
+
+            {/* Other Deductions */}
+            <div className="form-group">
+              <label htmlFor="otherDeductions">?? Other Deductions</label>
+              <div className="input-wrapper">
+                <span className="currency-symbol">?</span>
+                <input
+                  id="otherDeductions"
+                  type="number"
+                  placeholder="0"
+                  value={deductions.otherDeductions || ''}
+                  onChange={(e) => handleDeductionChange('otherDeductions', e.target.value)}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Results Section */}
+          {results && (
+            <div className="section results-section">
+              <h2 className="section-title">?? Tax Comparison Results</h2>
+
+              <div className="comparison-grid">
+                {/* Old Regime Box */}
+                <div className={
+egime-box }>
+                  <h3>?? Old Regime</h3>
+                  <div className="regime-detail">
+                    <span>Taxable Income:</span>
+                    <span>{formatCurrency(results.oldRegime.taxableIncome)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Basic Tax:</span>
+                    <span>{formatCurrency(results.oldRegime.baseTax)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Cess (4%):</span>
+                    <span>{formatCurrency(results.oldRegime.cess)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Surcharge:</span>
+                    <span>{formatCurrency(results.oldRegime.surcharge)}</span>
+                  </div>
+                  <div className="tax-total">
+                    {formatCurrency(results.oldRegime.totalTax)}
+                  </div>
+                  {results.comparison.recommendedRegime === 'old' && <div className="recommended-badge">? RECOMMENDED</div>}
+                </div>
+
+                {/* New Regime Box */}
+                <div className={
+egime-box }>
+                  <h3>?? New Regime</h3>
+                  <div className="regime-detail">
+                    <span>Standard Deduction:</span>
+                    <span>{formatCurrency(results.newRegime.standardDeduction)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Taxable Income:</span>
+                    <span>{formatCurrency(results.newRegime.taxableIncome)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Basic Tax:</span>
+                    <span>{formatCurrency(results.newRegime.baseTax)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Cess (4%):</span>
+                    <span>{formatCurrency(results.newRegime.cess)}</span>
+                  </div>
+                  <div className="regime-detail">
+                    <span>Surcharge:</span>
+                    <span>{formatCurrency(results.newRegime.surcharge)}</span>
+                  </div>
+                  <div className="tax-total">
+                    {formatCurrency(results.newRegime.totalTax)}
+                  </div>
+                  {results.comparison.recommendedRegime === 'new' && <div className="recommended-badge">? RECOMMENDED</div>}
+                </div>
+              </div>
+
+              {/* Savings Message */}
+              <div className={savings-message }>
+                <h4>?? Key Insight</h4>
+                <p>{results.comparison.message}</p>
+              </div>
+
+              {/* Suggestions */}
+              {results.suggestions && results.suggestions.length > 0 && (
+                <div className="suggestions-box">
+                  <h3>? Tax Saving Suggestions</h3>
+                  <div className="suggestions-list">
+                    {results.suggestions.slice(0, 5).map((suggestion, index) => (
+                      <div key={index} className="suggestion-card">
+                        <h4>{suggestion.title}</h4>
+                        <p>{suggestion.description}</p>
+                        {typeof suggestion.taxSavings === 'number' && (
+                          <div className="savings-amount">?? Save: {formatCurrency(suggestion.taxSavings)}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="error-message">
+              <p>?? {error}</p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="loading">
+              <div className="spinner"></div>
+              <p>Calculating tax...</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaxCalculator;

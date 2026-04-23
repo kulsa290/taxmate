@@ -33,12 +33,12 @@ function ChatComposer({ inputValue, isLoading, onChange, onSubmit }) {
 
         <div className="mt-3 flex items-end gap-3">
           <div className="min-w-0 flex-1">
-            <label className="sr-only" htmlFor="taxmate-prompt">
+            <label className="sr-only" htmlFor="karsathi-prompt">
               Ask anything about tax
             </label>
             <textarea
               className="max-h-40 min-h-[60px] w-full resize-none rounded-2xl border border-transparent bg-slate-50 px-4 py-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-slate-200 focus:bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-700 dark:focus:bg-slate-900"
-              id="taxmate-prompt"
+              id="karsathi-prompt"
               onChange={(event) => onChange(event.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything about tax..."

@@ -1,0 +1,24 @@
+/**
+ * Jest configuration for unit and integration tests
+ * @type {import('@jest/types').Config.InitialOptions}
+ */
+module.exports = {
+  testEnvironment: "node",
+  coverageDirectory: "coverage",
+  collectCoverageFrom: [
+    "src/**/*.js",
+    "!src/**/*.test.js",
+    "!src/**/index.js",
+  ],
+  testMatch: ["**/src/__tests__/**/*.js", "**/src "**/src/?(*.)+(spec|test).js"],
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+  },
+  setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.js"],
+  testTimeout: 10000,
+};

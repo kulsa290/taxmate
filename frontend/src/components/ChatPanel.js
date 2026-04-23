@@ -12,7 +12,7 @@ function TypingIndicator() {
         </div>
 
         <p className="mt-2 px-1 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
-          TaxMate is thinking
+          Karsathi is thinking
         </p>
       </div>
     </div>

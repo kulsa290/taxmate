@@ -1,0 +1,586 @@
+/* Reports Component Styling */
+
+.reports-container {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 20px;
+}
+
+.reports-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.reports-header h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.reports-header p {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* Messages */
+.message {
+  padding: 15px 20px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Layout */
+.reports-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Calculations List Panel */
+.calculations-list-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  height: fit-content;
+}
+
+.calculations-list-panel h2 {
+  color: #333;
+  font-size: 18px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.calculations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.calculations-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.calculations-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.calculations-list::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 10px;
+}
+
+.calculations-list::-webkit-scrollbar-thumb:hover {
+  background: #5568d3;
+}
+
+/* Calculation Item */
+.calc-item {
+  padding: 12px;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.calc-item:hover {
+  border-color: #667eea;
+  background: #f0f3ff;
+  transform: translateX(5px);
+}
+
+.calc-item.active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.calc-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 10px;
+}
+
+.calc-item-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+  word-break: break-word;
+}
+
+.calc-date {
+  color: #999;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.calc-item-details {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.tax-badge {
+  background: #e8f0ff;
+  color: #667eea;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 120px;
+}
+
+.regime-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.regime-badge.old {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.regime-badge.new {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.regime-badge.equal {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-state p {
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.help-text {
+  color: #667eea;
+  font-size: 12px;
+}
+
+/* Report Details Panel */
+.report-details-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.empty-selection {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 16px;
+}
+
+/* CA Branding Section */
+.ca-branding-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #e0e0e0;
+}
+
+.ca-branding-section h3 {
+  color: #333;
+  font-size: 16px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+/* Summary Section */
+.calculation-summary {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #e0e0e0;
+}
+
+.calculation-summary h3 {
+  color: #333;
+  font-size: 16px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.summary-item .label {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.summary-item .value {
+  color: #333;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Tax Comparison */
+.tax-comparison {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #e0e0e0;
+}
+
+.tax-comparison h3 {
+  color: #333;
+  font-size: 16px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.regime-card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.regime-card.old-regime {
+  border-left-color: #ffc107;
+}
+
+.regime-card.new-regime {
+  border-left-color: #17a2b8;
+}
+
+.regime-card h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tax-amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.regime-card.old-regime .tax-amount {
+  color: #ffc107;
+}
+
+.regime-card.new-regime .tax-amount {
+  color: #17a2b8;
+}
+
+/* Savings Info */
+.savings-info {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #28a745;
+}
+
+.savings-info h4 {
+  color: #155724;
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.savings-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #28a745;
+  margin-bottom: 5px;
+}
+
+.savings-info p {
+  margin: 0;
+  color: #155724;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Suggestions Preview */
+.suggestions-preview {
+  background: #fff3cd;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #ffeaa7;
+  border-left: 4px solid #ffc107;
+}
+
+.suggestions-preview h3 {
+  color: #ff6b00;
+  font-size: 16px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.suggestion-item {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.suggestion-item h5 {
+  color: #ff6b00;
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.suggestion-item p {
+  color: #666;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+}
+
+.suggestion-item .savings {
+  display: block;
+  color: #28a745;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background: #d8d8d8;
+  transform: translateY(-2px);
+}
+
+.btn-large {
+  padding: 14px;
+  font-size: 15px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+  .reports-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calculations-list-panel {
+    height: auto;
+  }
+
+  .calculations-list {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-header {
+    padding: 25px;
+  }
+
+  .reports-header h1 {
+    font-size: 24px;
+  }
+
+  .reports-layout {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-header {
+    padding: 20px;
+  }
+
+  .reports-header h1 {
+    font-size: 20px;
+  }
+
+  .reports-header p {
+    font-size: 14px;
+  }
+
+  .calculations-list-panel {
+    padding: 15px;
+  }
+
+  .report-details-panel {
+    padding: 15px;
+  }
+
+  .ca-branding-section,
+  .calculation-summary,
+  .tax-comparison,
+  .suggestions-preview {
+    padding: 15px;
+  }
+
+  .regime-card {
+    padding: 12px;
+  }
+
+  .tax-amount {
+    font-size: 18px;
+  }
+
+  .savings-amount {
+    font-size: 20px;
+  }
+}

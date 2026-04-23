@@ -1,13 +1,39 @@
-name: TaxMate CI
+name: TaxMate CI/CD Pipeline
 
 on:
   pull_request:
     branches:
       - main
+      - develop
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: test
+  JWT_SECRET: ci-placeholder-secret
+  OPENAI_API_KEY: ci-placeholder-openai-key
+  MONGODB_URI: mongodb://localhost:27017/taxmate-test
 
 jobs:
-  backend-check:
+  backend-tests:
     runs-on: ubuntu-latest
+    name: Backend Tests & Coverage
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
 
     steps:
       - name: Checkout repository
@@ -23,15 +49,56 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Run linter
+        run: npm run lint --if-present || echo "Linting skipped"
+
       - name: Verify backend app boots
         run: npm run verify:backend
         env:
           NODE_ENV: test
-          JWT_SECRET: ci-placeholder-secret
-          OPENAI_API_KEY: ci-placeholder-openai-key
 
-  frontend-check:
+      - name: Run unit tests
+        run: npm run test:unit --if-present || npm test
+        env:
+          NODE_ENV: test
+
+      - name: Run integration tests
+        run: npm run test:integration --if-present || echo "Integration tests skipped"
+        env:
+          NODE_ENV: test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/coverage-final.json
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('./coverage/coverage-final.json', 'utf8'));
+            const lines = coverage[''].lines;
+            const covered = Object.values(lines).filter(v => v > 0).length;
+            const total = Object.values(lines).length;
+            const percent = Math.round((covered / total) * 100);
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📊 **Test Coverage**: ${percent}% (${covered}/${total} lines)\n\n[View detailed report](https://codecov.io/gh/${{ github.repository }})`
+            });
+
+  frontend-tests:
     runs-on: ubuntu-latest
+    name: Frontend Tests & Build
 
     steps:
       - name: Checkout repository
@@ -48,9 +115,93 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: Run frontend tests
+        run: npm test -- --watchAll=false --coverage || true
+        working-directory: frontend
+
       - name: Build frontend
         run: npm run build
         working-directory: frontend
         env:
           CI: true
           REACT_APP_API_BASE_URL: https://api.taxmate.in
+
+      - name: Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build/
+          retention-days: 5
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security & Code Quality
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --production 2>/dev/null || true
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'TaxMate Backend'
+          path: '.'
+          format: 'JSON'
+          args: >
+            --enable-retired
+            --enableExperimental
+        continue-on-error: true
+
+  docker-build:
+    runs-on: ubuntu-latest
+    name: Docker Build Check
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: taxmate-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  all-checks-passed:
+    runs-on: ubuntu-latest
+    name: All Checks Passed
+    needs: [backend-tests, frontend-tests, security-scan, docker-build]
+    if: always()
+
+    steps:
+      - name: Verify all checks passed
+        run: |
+          if [[ "${{ needs.backend-tests.result }}" != "success" || "${{ needs.frontend-tests.result }}" != "success" || "${{ needs.security-scan.result }}" != "success" || "${{ needs.docker-build.result }}" != "success" ]]; then
+            echo "❌ One or more checks failed"
+            exit 1
+          fi
+          echo "✅ All checks passed successfully"

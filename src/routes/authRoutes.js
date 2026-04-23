@@ -9,8 +9,8 @@
  */
 
 const router = require("express").Router();
-const { register, login, getProfile, logout } = require("../controllers/authController");
-const auth = require("../middleware/authMiddleware");
+const { register, login, getProfile, logout, upgradeToPro } = require("../controllers/authController");
+const authMiddleware = require("../middleware/authMiddleware");
 const { validateRequest } = require("../middleware/schemaValidationMiddleware");
 const { registerSchema, loginSchema } = require("../schemas/validationSchemas");
 
@@ -42,7 +42,7 @@ router.post("/login", validateRequest(loginSchema), login);
  * @requires Authorization header with JWT token
  * @returns {Object} Success message
  */
-router.post("/logout", auth, logout);
+router.post("/logout", authMiddleware.required, logout);
 
 /**
  * GET /api/auth/me
@@ -51,6 +51,15 @@ router.post("/logout", auth, logout);
  * @requires Authorization header with JWT token
  * @returns {Object} User profile data (without password)
  */
-router.get("/me", auth, getProfile);
+router.get("/me", authMiddleware.required, getProfile);
+
+/**
+ * POST /api/auth/upgrade
+ * Upgrade user plan to Pro
+ * @async
+ * @requires Authorization header with JWT token
+ * @returns {Object} Updated user data with new plan
+ */
+router.post("/upgrade", authMiddleware.required, upgradeToPro);
 
 module.exports = router;

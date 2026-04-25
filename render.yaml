@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: CORS_ORIGINS
-        value: https://app.taxmate.in
+        value: https://karsathi.co.in,https://www.karsathi.co.in
       - key: FORCE_HTTPS
         value: true
       - key: TRUST_PROXY

@@ -81,7 +81,7 @@ jobs:
             production)
               REGION="us-east-1"
               REGISTRY="ghcr.io"
-              DOMAIN="api.taxmate.in"
+              DOMAIN="api.karsathi.co.in"
               MONITORING=true
               ;;
           esac

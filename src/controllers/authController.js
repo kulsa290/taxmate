@@ -109,6 +109,8 @@ exports.upgradeToPro = async (req, res, next) => {
     return next(new AppError(500, "Upgrade failed"));
   }
 };
+
+/**
  * @async
  * @param {Object} req - Express request object
  * @param {string} req.body.name - User's full name

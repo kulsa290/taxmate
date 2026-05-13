@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import '../styles/TaxCalculator.css';
 
@@ -23,7 +23,7 @@ const TaxCalculator = () => {
   const [error, setError] = useState(null);
   const [clientName, setClientName] = useState('');
 
-  const handleCalculate = async () => {
+  const handleCalculate = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -44,7 +44,7 @@ const TaxCalculator = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [income, deductions, clientName]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -52,7 +52,7 @@ const TaxCalculator = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [income, deductions]);
+  }, [handleCalculate]);
 
   const handleIncomeChange = (field, value) => {
     setIncome((prev) => ({

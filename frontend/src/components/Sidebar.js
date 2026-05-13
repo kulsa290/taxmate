@@ -1,13 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const { user } = useAuth();
 
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/chat', label: 'AI Chat', icon: '💬' },
     { path: '/tax-calculator', label: 'Tax Calculator', icon: '🧮' },
+    ...(user?.role === 'ca' ? [{ path: '/clients', label: 'Client Management', icon: '👥' }] : []),
     { path: '/profile', label: 'Profile', icon: '👤' },
   ];
 

@@ -9,7 +9,7 @@
  */
 
 const router = require("express").Router();
-const { register, login, getProfile, logout, upgradeToPro } = require("../controllers/authController");
+const { register, login, getProfile, logout, upgradeToPro, getAvailableRoles } = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { validateRequest } = require("../middleware/schemaValidationMiddleware");
 const { registerSchema, loginSchema } = require("../schemas/validationSchemas");
@@ -34,6 +34,12 @@ router.post("/register", validateRequest(registerSchema), register);
  * @returns {Object} JWT token, user data, and success message
  */
 router.post("/login", validateRequest(loginSchema), login);
+
+/**
+ * GET /api/auth/roles
+ * Get available registration roles (CA and Client)
+ */
+router.get("/roles", getAvailableRoles);
 
 /**
  * POST /api/auth/logout

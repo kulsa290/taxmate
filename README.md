@@ -1,6 +1,14 @@
-# TaxMate
+# Karsathi (TaxMate)
 
-TaxMate is an AI-powered tax assistant web app focused on Indian users. The project combines a React frontend with a Node.js and Express backend to deliver authenticated tax support, AI chat guidance, and a foundation for future compliance workflows.
+Karsathi is an AI assistant for Indian businesses, starting with TaxMate — a product designed to simplify GST, income tax, and compliance for freelancers and small businesses.
+
+Instead of relying on expensive or unavailable guidance, users can ask tax questions in simple language and receive instant, actionable answers.
+
+## Why it matters
+
+Millions of Indian freelancers and small businesses struggle with tax compliance due to lack of clarity, time, and access to experts. Mistakes often lead to penalties and stress.
+
+Karsathi solves this by acting as a 24/7 AI-powered tax assistant.
 
 ## Description
 
@@ -256,8 +264,8 @@ Backend environment variables used today:
 
 For a startup-friendly deployment setup:
 
-- Frontend: Vercel
-- Backend: Render or Railway
+- Frontend: Vercel → `https://karsathi.co.in`
+- Backend: Railway → `https://api.karsathi.co.in`
 - Database: MongoDB Atlas
 
 Recommended approach:

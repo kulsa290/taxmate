@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import '../styles/ClientDashboard.css';
 
@@ -30,12 +30,13 @@ const ClientDashboard = () => {
    */
   useEffect(() => {
     fetchClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus]);
 
   /**
    * Fetch clients from backend
    */
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/clients', {
@@ -56,7 +57,7 @@ const ClientDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus, searchTerm]);
 
   /**
    * Handle add/edit client form submission

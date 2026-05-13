@@ -13,6 +13,10 @@ exports.createClient = async (req, res, next) => {
       return next(new AppError('User not authenticated', 401));
     }
 
+    if (req.user?.role !== 'ca') {
+      return next(new AppError('Access denied. Only CA users can manage clients.', 403));
+    }
+
     if (!clientName || !email) {
       return next(new AppError('Client name and email are required', 400));
     }
@@ -59,6 +63,10 @@ exports.getAllClients = async (req, res, next) => {
       return next(new AppError('User not authenticated', 401));
     }
 
+    if (req.user?.role !== 'ca') {
+      return next(new AppError('Access denied. Only CA users can manage clients.', 403));
+    }
+
     const { status = 'active', search } = req.query;
 
     // Build filter
@@ -97,6 +105,10 @@ exports.getClient = async (req, res, next) => {
       return next(new AppError('User not authenticated', 401));
     }
 
+    if (req.user?.role !== 'ca') {
+      return next(new AppError('Access denied. Only CA users can manage clients.', 403));
+    }
+
     const client = await Client.findOne({
       _id: req.params.id,
       userId: req.userId,
@@ -122,6 +134,10 @@ exports.updateClient = async (req, res, next) => {
   try {
     if (!req.userId) {
       return next(new AppError('User not authenticated', 401));
+    }
+
+    if (req.user?.role !== 'ca') {
+      return next(new AppError('Access denied. Only CA users can manage clients.', 403));
     }
 
     const allowedFields = [
@@ -174,6 +190,10 @@ exports.deleteClient = async (req, res, next) => {
       return next(new AppError('User not authenticated', 401));
     }
 
+    if (req.user?.role !== 'ca') {
+      return next(new AppError('Access denied. Only CA users can manage clients.', 403));
+    }
+
     const client = await Client.findOneAndDelete({
       _id: req.params.id,
       userId: req.userId,
@@ -199,6 +219,10 @@ exports.addCalculationToClient = async (req, res, next) => {
   try {
     if (!req.userId) {
       return next(new AppError('User not authenticated', 401));
+    }
+
+    if (req.user?.role !== 'ca') {
+      return next(new AppError('Access denied. Only CA users can manage clients.', 403));
     }
 
     const { calculationId } = req.body;

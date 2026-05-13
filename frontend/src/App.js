@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import Chat from './components/Chat';
 import Profile from './components/Profile';
 import TaxCalculator from './components/TaxCalculator';
+import ClientDashboard from './components/ClientDashboard';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsConditions from './components/TermsConditions';
 import Header from './components/Header';
@@ -69,6 +70,16 @@ function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <TaxCalculator />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ClientDashboard />
                   </AppLayout>
                 </ProtectedRoute>
               }

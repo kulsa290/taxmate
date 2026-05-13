@@ -65,7 +65,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <TrialBanner user={user} onClose={() => setShowBanner(false)} />
+      {showBanner && <TrialBanner user={user} onClose={() => setShowBanner(false)} />}
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} user={user} />
 
       <div className="flex justify-between items-center">

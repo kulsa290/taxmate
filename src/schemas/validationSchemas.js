@@ -19,6 +19,12 @@ const registerSchema = z.object({
     .string({ required_error: "Password is required" })
     .min(8, "Password must be at least 8 characters long")
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain uppercase, lowercase, and numbers"),
+  role: z
+    .enum(["ca", "client"], {
+      invalid_type_error: "Role must be either 'ca' or 'client'",
+      required_error: "Role is required",
+    })
+    .optional(),
 });
 
 /**

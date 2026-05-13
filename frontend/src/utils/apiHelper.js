@@ -1,11 +1,16 @@
-const BASE_URL = process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE_URL || '';
+const BASE_URL = process.env.REACT_APP_API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.REACT_APP_API_BASE_URL || '';
+const normalizedBaseUrl = (() => {
+  if (!BASE_URL || BASE_URL === '/') return '';
+  return BASE_URL.replace(/\/+$|^\s+|\s+$/g, '').replace(/\/+$/g, '');
+})();
+console.log('🔧 API Base URL:', normalizedBaseUrl || 'Not set - using relative URLs');
 
 /**
  * Build full URL for API endpoints
  */
 const buildUrl = (path) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return BASE_URL ? `${BASE_URL}${normalizedPath}` : normalizedPath;
+  return normalizedBaseUrl ? `${normalizedBaseUrl}${normalizedPath}` : normalizedPath;
 };
 
 /**
@@ -24,21 +29,37 @@ const getAuthHeaders = () => {
  * Generic fetch wrapper
  */
 const fetchJson = async (path, options = {}) => {
+  const fullUrl = buildUrl(path);
+  console.log('🌐 API Call:', {
+    path,
+    fullUrl,
+    method: options.method || 'GET',
+    baseUrl: BASE_URL
+  });
+
   try {
-    const response = await fetch(buildUrl(path), {
+    const response = await fetch(fullUrl, {
       headers: getAuthHeaders(),
       ...options,
     });
 
+    console.log('📡 Response status:', response.status, response.statusText);
+
     const data = await response.json();
+    console.log('📦 Response data:', data);
 
     if (!response.ok) {
+      console.error('❌ API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        data
+      });
       throw new Error(data.message || `Request failed with status ${response.status}`);
     }
 
     return data;
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('💥 Fetch error:', error);
     throw error;
   }
 };
@@ -62,10 +83,10 @@ export const auth = {
       body: JSON.stringify({ email, password }),
     }),
 
-  register: (name, email, password) =>
+  register: (name, email, password, role = 'client') =>
     fetchJson('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, role }),
     }),
 
   logout: () => {

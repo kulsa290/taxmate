@@ -7,23 +7,29 @@ const parseNumber = (value, fallback) => {
 };
 
 const connectDB = async () => {
-  const mongoUri = process.env.MONGO_URI;
+  const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
   if (!mongoUri) {
-    throw new Error("MONGO_URI is not set in the environment");
+    throw new Error("MONGO_URI or MONGODB_URI is not set in the environment");
   }
 
   if (!mongoUri.startsWith("mongodb://") && !mongoUri.startsWith("mongodb+srv://")) {
     throw new Error(
-      "Invalid MONGO_URI format. Expected it to start with 'mongodb://' or 'mongodb+srv://'"
+      "Invalid MongoDB URI format. Expected it to start with 'mongodb://' or 'mongodb+srv://'"
     );
   }
 
   const conn = await mongoose.connect(mongoUri, {
-    maxPoolSize: parseNumber(process.env.MONGODB_MAX_POOL_SIZE, 20),
+    maxPoolSize: parseNumber(process.env.MONGODB_MAX_POOL_SIZE, parseNumber(process.env.MONGODB_POOL_SIZE, 20)),
     minPoolSize: parseNumber(process.env.MONGODB_MIN_POOL_SIZE, 5),
-    serverSelectionTimeoutMS: parseNumber(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS, 10000),
-    socketTimeoutMS: parseNumber(process.env.MONGODB_SOCKET_TIMEOUT_MS, 45000),
+    serverSelectionTimeoutMS: parseNumber(
+      process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS,
+      parseNumber(process.env.MONGODB_CONNECTION_TIMEOUT, 10000)
+    ),
+    socketTimeoutMS: parseNumber(
+      process.env.MONGODB_SOCKET_TIMEOUT_MS,
+      parseNumber(process.env.MONGODB_SOCKET_TIMEOUT, 45000)
+    ),
   });
 
   logger.info("MongoDB connected", { host: conn.connection.host });

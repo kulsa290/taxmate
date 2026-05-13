@@ -10,7 +10,7 @@
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
-    "lint": "eslint src/**/*.js 2>/dev/null || echo 'ESLint not configured'",
+    "lint": "cd frontend && npx eslint --ext .js,.jsx src",
     "verify:backend": "node -e \"require('./src/app'); console.log('Backend app loads successfully');\"",
     "validate:docker": "node validate-docker-setup.js",
     "docker:dev": "docker-compose up --build",

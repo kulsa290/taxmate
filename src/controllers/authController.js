@@ -126,57 +126,84 @@ exports.upgradeToPro = async (req, res, next) => {
  * // POST /api/auth/register
  * // Body: { name: "John Doe", email: "john@example.com", password: "SecurePass123" }
  */
-exports.register = async (req, res, next) => {
+exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role = "client" } = req.body;
 
-    console.log('Starting registration for:', { name, email, requestId: req.id });
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log('User already exists:', email);
-      logger.warn("Registration attempt with existing email", { email, requestId: req.id });
-      return next(new AppError(409, "User already exists with this email"));
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "All fields are required",
+      });
     }
 
-    console.log('Hashing password...');
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingUser = await User.findOne({ email });
 
-    console.log('Creating user...');
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: "User already exists",
+      });
+    }
+
+    // Password will be hashed automatically by the pre-save hook
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
+      password,
+      role,
     });
 
-    console.log('User created successfully:', user._id);
-    logger.info("New user registered", { userId: user._id, email, requestId: req.id });
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    return sendSuccess(res, 201, "User created successfully", {
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        plan: user.plan,
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
       },
     });
+
   } catch (err) {
-    console.error('Registration error:', err);
-    logger.error("Registration failed", {
-      error: err.message,
-      stack: err.stack,
-      requestId: req.id,
-    });
-    // Send error response directly
-    return res.status(500).json({
+    console.log("REGISTER ERROR 👉", err);
+
+    res.status(500).json({
       success: false,
       message: "Registration failed",
-      requestId: req.id,
-      data: null,
+      error: err.message,
     });
   }
 };
-
+/**
+ * Get available registration roles
+ * @async
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @returns {Object} List of supported roles
+ */
+exports.getAvailableRoles = async (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "Available user roles fetched successfully",
+    data: {
+      roles: [
+        { value: "ca", label: "CA" },
+        { value: "client", label: "Client" },
+      ],
+    },
+  });
+};
 /**
  * Login user
  * @async
@@ -198,38 +225,51 @@ exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       logger.warn("Login attempt with non-existent email", { email, requestId: req.id });
-      return next(new AppError(401, "Invalid credentials"));
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       logger.warn("Login attempt with wrong password", { email, userId: user._id, requestId: req.id });
-      return next(new AppError(401, "Invalid credentials"));
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
     if (!process.env.JWT_SECRET) {
       logger.error("JWT secret not configured", { requestId: req.id });
-      return next(new AppError(500, "JWT secret is not configured"));
+      return res.status(500).json({
+        success: false,
+        message: "JWT secret is not configured",
+      });
     }
 
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     logger.info("User logged in successfully", { userId: user._id, email, requestId: req.id });
 
-    return sendSuccess(res, 200, "Login successful", {
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        plan: user.plan,
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
       },
     });
   } catch (err) {
@@ -237,6 +277,10 @@ exports.login = async (req, res, next) => {
       error: err.message,
       requestId: req.id,
     });
-    return next(new AppError(500, "Login failed"));
+    return res.status(500).json({
+      success: false,
+      message: "Login failed",
+      error: err.message,
+    });
   }
 };

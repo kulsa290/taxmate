@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 // Add uncaught error handlers FIRST
 process.on("uncaughtException", (error) => {
@@ -18,6 +19,7 @@ const logger = require("./utils/logger");
 console.log("✅ Modules loaded successfully");
 console.log("📍 NODE_ENV:", process.env.NODE_ENV);
 console.log("📍 PORT env:", process.env.PORT);
+console.log("📍 MONGO_URI loaded:", !!process.env.MONGO_URI);
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || "0.0.0.0";

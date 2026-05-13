@@ -12,13 +12,46 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Basic validation
+    if (!email.trim() || !password.trim()) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
     setLoading(true);
+
     try {
-      await login(email, password);
-      toast.success('Login successful!');
-      navigate('/');
+      console.log('🚀 Starting login process...');
+      const user = await login(email, password);
+
+      console.log('✅ Login completed successfully');
+      toast.success(`Welcome back, ${user.name || user.email}!`);
+
+      // Small delay to show success message
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
+
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed');
+      console.error('❌ Login error:', err);
+
+      // Better error handling
+      let errorMessage = 'Login failed. Please try again.';
+
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Invalid email or password';
+      } else if (err.response?.status === 429) {
+        errorMessage = 'Too many attempts. Please wait a moment.';
+      } else if (!navigator.onLine) {
+        errorMessage = 'No internet connection. Please check your connection.';
+      }
+
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

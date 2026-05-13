@@ -46,7 +46,14 @@ function Header({ onOpenSidebar }) {
           AI online
         </div>
 
-        <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
+        <div className="space-y-1 text-right">
+          <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
+          {user?.role && (
+            <span className="block text-xs uppercase tracking-[0.24em] text-slate-500">
+              Role: {user.role === 'ca' ? 'CA' : 'Client'}
+            </span>
+          )}
+        </div>
 
         <button
           onClick={handleLogout}

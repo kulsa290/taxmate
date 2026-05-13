@@ -135,7 +135,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-12">
           <h3 className="text-4xl font-bold text-gray-900 mb-4">Why Karsathi?</h3>
           <p className="text-xl text-gray-600">Everything you need to manage taxes like a pro</p>
@@ -262,7 +262,7 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition">Features</a></li>
+                <li><a href="#features" className="hover:text-white transition">Features</a></li>
                 <li><a href="#pricing" className="hover:text-white transition">Pricing</a></li>
               </ul>
             </div>
